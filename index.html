@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MeuApto">
+<meta name="theme-color" content="#F2F2F7">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Meu Apartamento</title>
+<style>
+  :root {
+    --ios-blue: #007AFF;
+    --ios-green: #34C759;
+    --ios-red: #FF3B30;
+    --ios-orange: #FF9500;
+    --ios-yellow: #FFCC00;
+    --ios-teal: #5AC8FA;
+    --ios-purple: #AF52DE;
+    --ios-gray: #8E8E93;
+    --ios-gray2: #AEAEB2;
+    --ios-gray3: #C7C7CC;
+    --ios-gray4: #D1D1D6;
+    --ios-gray5: #E5E5EA;
+    --ios-gray6: #F2F2F7;
+    --ios-bg: #F2F2F7;
+    --ios-card: #FFFFFF;
+    --ios-separator: rgba(60,60,67,0.12);
+    --ios-label: #000000;
+    --ios-label2: rgba(60,60,67,0.6);
+    --ios-label3: rgba(60,60,67,0.3);
+    --safe-top: env(safe-area-inset-top, 44px);
+    --safe-bottom: env(safe-area-inset-bottom, 34px);
+    --nav-height: 83px;
+    --header-height: 96px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; width: 100%;
+    overflow: hidden;
+    background: var(--ios-bg);
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ios-label);
+  }
+
+  /* ── App Shell ── */
+  #app { height: 100%; display: flex; flex-direction: column; }
+
+  /* ── Navigation Bar (top) ── */
+  .nav-bar {
+    position: relative;
+    z-index: 100;
+    background: rgba(242,242,247,0.85);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    padding-top: var(--safe-top);
+    border-bottom: 1px solid var(--ios-separator);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 44px; padding: 0 16px;
+  }
+  .nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
+  .nav-btn {
+    font-size: 17px; color: var(--ios-blue); background: none; border: none;
+    cursor: pointer; padding: 4px 0; min-width: 60px;
+    font-family: inherit; font-weight: 400;
+  }
+  .nav-btn.right { text-align: right; }
+  .nav-btn.icon { font-size: 22px; min-width: 36px; text-align: center; }
+
+  /* ── Large Title Header ── */
+  .large-title-wrap {
+    background: rgba(242,242,247,0.85);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    padding: 4px 16px 10px;
+  }
+  .large-title {
+    font-size: 34px; font-weight: 700; letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .large-subtitle {
+    font-size: 13px; color: var(--ios-label2); margin-top: 2px;
+  }
+
+  /* ── Scroll Content ── */
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  }
+
+  /* ── Section ── */
+  .section { margin: 20px 0 0; }
+  .section-header {
+    font-size: 13px; font-weight: 600; color: var(--ios-label2);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 0 32px 6px;
+  }
+  .section-footer {
+    font-size: 13px; color: var(--ios-label2);
+    padding: 6px 32px 0;
+    line-height: 1.4;
+  }
+
+  /* ── Card List ── */
+  .card-list {
+    background: var(--ios-card);
+    margin: 0 16px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-row {
+    display: flex; align-items: center;
+    min-height: 54px; padding: 10px 16px;
+    position: relative; cursor: pointer;
+    transition: background 0.15s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .card-row:not(:last-child)::after {
+    content: ''; position: absolute;
+    bottom: 0; left: 56px; right: 0;
+    height: 0.5px; background: var(--ios-separator);
+  }
+  .card-row:active { background: var(--ios-gray5); }
+  .row-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; margin-right: 12px; flex-shrink: 0;
+  }
+  .row-content { flex: 1; min-width: 0; }
+  .row-label { font-size: 17px; color: var(--ios-label); font-weight: 400; }
+  .row-detail { font-size: 13px; color: var(--ios-label2); margin-top: 1px; }
+  .row-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .row-value { font-size: 17px; color: var(--ios-label2); }
+  .row-chevron { color: var(--ios-gray3); font-size: 14px; margin-left: 2px; }
+
+  /* ── Summary Cards ── */
+  .summary-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin: 0 16px;
+  }
+  .summary-card {
+    background: var(--ios-card); border-radius: 12px;
+    padding: 16px;
+  }
+  .summary-card.full { grid-column: 1 / -1; }
+  .sc-label { font-size: 13px; color: var(--ios-label2); font-weight: 500; margin-bottom: 4px; }
+  .sc-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+  .sc-sub { font-size: 12px; color: var(--ios-label2); margin-top: 3px; }
+
+  /* ── Progress Bar ── */
+  .progress-wrap { margin-top: 10px; }
+  .progress-track {
+    height: 6px; background: var(--ios-gray5); border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.6s cubic-bezier(.22,.68,0,1.2);
+  }
+  .progress-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 4px; font-size: 11px; color: var(--ios-label2);
+  }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    background: rgba(249,249,249,0.94);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-top: 0.5px solid var(--ios-separator);
+    padding-bottom: var(--safe-bottom);
+    display: flex; z-index: 100;
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 4px 4px;
+    cursor: pointer; background: none; border: none;
+    color: var(--ios-gray2); transition: color 0.1s;
+    -webkit-user-select: none; user-select: none;
+    font-family: inherit;
+  }
+  .tab-item.active { color: var(--ios-blue); }
+  .tab-item:active { opacity: 0.7; }
+  .tab-icon { font-size: 24px; line-height: 1; margin-bottom: 2px; }
+  .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.1px; }
+
+  /* ── Views ── */
+  .view { display: none; height: 100%; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* ── Modal Sheet ── */
+  .sheet-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.4);
+    display: none; align-items: flex-end;
+  }
+  .sheet-overlay.open { display: flex; }
+  .sheet {
+    background: var(--ios-card);
+    border-radius: 12px 12px 0 0;
+    width: 100%;
+    max-height: 92vh;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(.32,.72,0,1);
+    padding-bottom: var(--safe-bottom);
+  }
+  .sheet-overlay.open .sheet { transform: translateY(0); }
+  .sheet-handle {
+    width: 36px; height: 5px; background: var(--ios-gray4);
+    border-radius: 99px; margin: 10px auto 6px;
+    flex-shrink: 0;
+  }
+  .sheet-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 16px 12px; flex-shrink: 0;
+  }
+  .sheet-title { font-size: 17px; font-weight: 600; }
+  .sheet-close {
+    background: var(--ios-gray5); border: none; border-radius: 50%;
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--ios-gray); cursor: pointer;
+    font-family: inherit; font-weight: 600;
+  }
+  .sheet-body { overflow-y: auto; padding: 0 16px 16px; flex: 1; }
+
+  /* ── Form Elements ── */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: var(--ios-label2); margin-bottom: 6px; display: block; font-weight: 500; }
+  .form-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--ios-gray6); border: none; border-radius: 10px;
+    font-size: 17px; color: var(--ios-label); font-family: inherit;
+    outline: none; -webkit-appearance: none;
+  }
+  .form-input:focus { background: #EBEBF0; }
+  .form-select {
+    width: 100%; padding: 12px 14px;
+    background: var(--ios-gray6); border: none; border-radius: 10px;
+    font-size: 17px; color: var(--ios-label); font-family: inherit;
+    outline: none; -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: var(--ios-blue); color: #fff; border: none; border-radius: 12px;
+    font-size: 17px; font-weight: 600; font-family: inherit;
+    cursor: pointer; margin-top: 8px;
+    -webkit-user-select: none; user-select: none;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.75; }
+  .btn-destructive {
+    width: 100%; padding: 14px;
+    background: rgba(255,59,48,0.12); color: var(--ios-red); border: none; border-radius: 12px;
+    font-size: 17px; font-weight: 600; font-family: inherit;
+    cursor: pointer; margin-top: 8px;
+  }
+  .btn-destructive:active { opacity: 0.75; }
+
+  /* ── Status Badge ── */
+  .badge {
+    font-size: 12px; font-weight: 600; padding: 2px 8px;
+    border-radius: 99px; white-space: nowrap;
+  }
+  .badge-todo { background: rgba(142,142,147,0.15); color: var(--ios-gray); }
+  .badge-doing { background: rgba(255,149,0,0.15); color: var(--ios-orange); }
+  .badge-done { background: rgba(52,199,89,0.15); color: var(--ios-green); }
+  .badge-cancel { background: rgba(255,59,48,0.12); color: var(--ios-red); }
+
+  /* ── Empty State ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px 40px; color: var(--ios-label2); text-align: center;
+  }
+  .empty-icon { font-size: 52px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-title { font-size: 20px; font-weight: 600; color: var(--ios-label); margin-bottom: 6px; }
+  .empty-desc { font-size: 15px; line-height: 1.5; }
+
+  /* ── Segmented Control ── */
+  .segmented {
+    display: flex; background: var(--ios-gray5); border-radius: 9px;
+    padding: 2px; margin: 12px 16px 0;
+  }
+  .seg-item {
+    flex: 1; text-align: center; padding: 6px 4px;
+    font-size: 13px; font-weight: 500; border-radius: 7px;
+    cursor: pointer; transition: all 0.2s; color: var(--ios-label);
+    background: none; border: none; font-family: inherit;
+    -webkit-user-select: none; user-select: none;
+  }
+  .seg-item.active {
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    color: var(--ios-label);
+  }
+
+  /* Animations */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeSlideIn 0.3s ease forwards; }
+
+  .color-green { color: var(--ios-green) !important; }
+  .color-red { color: var(--ios-red) !important; }
+  .color-blue { color: var(--ios-blue) !important; }
+  .color-orange { color: var(--ios-orange) !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ HOME VIEW ═══ -->
+  <div class="view active" id="view-home">
+    <div class="nav-bar">
+      <div class="nav-inner">
+        <span style="min-width:60px"></span>
+        <span class="nav-title">Meu Apartamento</span>
+        <button class="nav-btn right icon" onclick="openAddItem()">＋</button>
+      </div>
+      <div class="large-title-wrap">
+        <div class="large-title">Resumo</div>
+        <div class="large-subtitle" id="home-subtitle">Carregando...</div>
+      </div>
+    </div>
+    <div class="scroll-content" id="home-scroll">
+      <!-- summary cards injected by JS -->
+    </div>
+  </div>
+
+  <!-- ═══ CATEGORY VIEW ═══ -->
+  <div class="view" id="view-category">
+    <div class="nav-bar">
+      <div class="nav-inner">
+        <button class="nav-btn" onclick="showView('home')">‹ Voltar</button>
+        <span class="nav-title" id="cat-title">Categoria</span>
+        <button class="nav-btn right icon" onclick="openAddItem()">＋</button>
+      </div>
+    </div>
+    <div class="scroll-content" id="cat-scroll"></div>
+  </div>
+
+  <!-- ═══ ITEMS VIEW ═══ -->
+  <div class="view" id="view-items">
+    <div class="nav-bar">
+      <div class="nav-inner">
+        <button class="nav-btn" id="items-back-btn" onclick="goBackFromItems()">‹ Voltar</button>
+        <span class="nav-title" id="items-title">Itens</span>
+        <button class="nav-btn right icon" onclick="openAddItem()">＋</button>
+      </div>
+      <div class="large-title-wrap">
+        <div class="large-title" id="items-large-title"></div>
+      </div>
+    </div>
+    <div class="segmented" id="items-seg">
+      <button class="seg-item active" onclick="filterItems('all', this)">Todos</button>
+      <button class="seg-item" onclick="filterItems('A Fazer', this)">A Fazer</button>
+      <button class="seg-item" onclick="filterItems('Em Andamento', this)">Em And.</button>
+      <button class="seg-item" onclick="filterItems('Concluído', this)">Concluído</button>
+    </div>
+    <div class="scroll-content" id="items-scroll"></div>
+  </div>
+
+  <!-- ═══ TAB BAR ═══ -->
+  <nav class="tab-bar">
+    <button class="tab-item active" id="tab-home" onclick="switchTab('home')">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Resumo</span>
+    </button>
+    <button class="tab-item" id="tab-obras" onclick="switchTab('obras')">
+      <span class="tab-icon">🔨</span>
+      <span class="tab-label">Obras</span>
+    </button>
+    <button class="tab-item" id="tab-eletro" onclick="switchTab('eletro')">
+      <span class="tab-icon">🍽️</span>
+      <span class="tab-label">Eletro</span>
+    </button>
+    <button class="tab-item" id="tab-moveis" onclick="switchTab('moveis')">
+      <span class="tab-icon">🛋️</span>
+      <span class="tab-label">Móveis</span>
+    </button>
+    <button class="tab-item" id="tab-mais" onclick="switchTab('mais')">
+      <span class="tab-icon">•••</span>
+      <span class="tab-label">Mais</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ═══ ADD/EDIT SHEET ═══ -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheetOutside(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="sheet-title">Novo Item</span>
+      <button class="sheet-close" onclick="closeSheet()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="f-desc" type="text" placeholder="Ex: Geladeira Samsung">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="f-cat">
+          <option value="obras">🔨 Obras e Reformas</option>
+          <option value="eletro">🍽️ Eletrodomésticos</option>
+          <option value="moveis">🛋️ Móveis</option>
+          <option value="decoracao">🎨 Decoração</option>
+          <option value="outros">📦 Outros</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fornecedor / Loja</label>
+        <input class="form-input" id="f-fornec" type="text" placeholder="Ex: Magazine Luiza">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Orçamento (R$)</label>
+          <input class="form-input" id="f-orc" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gasto Real (R$)</label>
+          <input class="form-input" id="f-gasto" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="f-status">
+          <option value="A Fazer">A Fazer</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <input class="form-input" id="f-obs" type="text" placeholder="Opcional">
+      </div>
+      <button class="btn-primary" onclick="saveItem()">Salvar</button>
+      <button class="btn-destructive" id="btn-delete" onclick="deleteItem()" style="display:none">Excluir Item</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const CATS = {
+  obras:     { label: 'Obras e Reformas',  emoji: '🔨', color: '#34C759' },
+  eletro:    { label: 'Eletrodomésticos',  emoji: '🍽️', color: '#FF9500' },
+  moveis:    { label: 'Móveis',            emoji: '🛋️', color: '#FF3B30' },
+  decoracao: { label: 'Decoração',         emoji: '🎨', color: '#AF52DE' },
+  outros:    { label: 'Outros',            emoji: '📦', color: '#5AC8FA' },
+};
+
+const DEFAULT_ITEMS = [
+  // Obras
+  {id:'1', cat:'obras', desc:'Demolição / quebra', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'2', cat:'obras', desc:'Revestimento de piso', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'3', cat:'obras', desc:'Pintura interna', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'4', cat:'obras', desc:'Instalação elétrica', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'5', cat:'obras', desc:'Instalação hidráulica', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'6', cat:'obras', desc:'Forro / gesso', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'7', cat:'obras', desc:'Banheiro – box e louças', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'8', cat:'obras', desc:'Mão de obra geral', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  // Eletro
+  {id:'9', cat:'eletro', desc:'Geladeira', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'10', cat:'eletro', desc:'Fogão / Cooktop', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'11', cat:'eletro', desc:'Máquina de lavar', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'12', cat:'eletro', desc:'Ar-condicionado', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'13', cat:'eletro', desc:'TV', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'14', cat:'eletro', desc:'Micro-ondas', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  // Moveis
+  {id:'15', cat:'moveis', desc:'Sofá / poltrona', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'16', cat:'moveis', desc:'Mesa de jantar + cadeiras', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'17', cat:'moveis', desc:'Cama casal', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'18', cat:'moveis', desc:'Guarda-roupa', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'19', cat:'moveis', desc:'Móveis de cozinha planejados', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  // Decoração
+  {id:'20', cat:'decoracao', desc:'Cortinas / persianas', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'21', cat:'decoracao', desc:'Tapetes', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'22', cat:'decoracao', desc:'Iluminação / lustres', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  // Outros
+  {id:'23', cat:'outros', desc:'Mudança / frete', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'24', cat:'outros', desc:'Limpeza pós-obra', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'25', cat:'outros', desc:'Projeto de arquitetura', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+  {id:'26', cat:'outros', desc:'Imprevistos', fornec:'', orc:0, gasto:0, status:'A Fazer', obs:''},
+];
+
+function loadData() {
+  try {
+    const d = localStorage.getItem('aptoapp_items');
+    return d ? JSON.parse(d) : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_ITEMS)); }
+}
+function saveData(items) {
+  try { localStorage.setItem('aptoapp_items', JSON.stringify(items)); } catch(e) {}
+}
+
+let items = loadData();
+let currentCat = null;
+let currentFilter = 'all';
+let editingId = null;
+let fromTab = 'home';
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function brl(v) {
+  const n = parseFloat(v) || 0;
+  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function statusBadge(s) {
+  const map = {
+    'A Fazer': 'badge-todo',
+    'Em Andamento': 'badge-doing',
+    'Concluído': 'badge-done',
+    'Cancelado': 'badge-cancel'
+  };
+  return `<span class="badge ${map[s]||'badge-todo'}">${s}</span>`;
+}
+
+function catStats(cat) {
+  const its = items.filter(i => i.cat === cat);
+  const orc = its.reduce((a,i) => a + (parseFloat(i.orc)||0), 0);
+  const gasto = its.reduce((a,i) => a + (parseFloat(i.gasto)||0), 0);
+  const done = its.filter(i => i.status === 'Concluído').length;
+  return { orc, gasto, done, total: its.length };
+}
+
+function totalStats() {
+  const orc = items.reduce((a,i) => a + (parseFloat(i.orc)||0), 0);
+  const gasto = items.reduce((a,i) => a + (parseFloat(i.gasto)||0), 0);
+  const done = items.filter(i => i.status === 'Concluído').length;
+  return { orc, gasto, done, total: items.length };
+}
+
+// ══════════════════════════════════════════
+// RENDER HOME
+// ══════════════════════════════════════════
+function renderHome() {
+  const st = totalStats();
+  const pct = st.orc > 0 ? Math.min(100, (st.gasto / st.orc) * 100) : 0;
+  const diff = st.orc - st.gasto;
+  const progressColor = pct > 90 ? 'var(--ios-red)' : pct > 70 ? 'var(--ios-orange)' : 'var(--ios-blue)';
+  const diffColor = diff >= 0 ? 'var(--ios-green)' : 'var(--ios-red)';
+
+  document.getElementById('home-subtitle').textContent =
+    `${st.done} de ${st.total} itens concluídos`;
+
+  const scroll = document.getElementById('home-scroll');
+  scroll.innerHTML = `
+    <div class="section" style="margin-top:16px">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="sc-label">Orçamento Total</div>
+          <div class="sc-value color-blue">${brl(st.orc)}</div>
+          <div class="sc-sub">planejado</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Gasto Real</div>
+          <div class="sc-value" style="color:${st.gasto>st.orc && st.orc>0 ? 'var(--ios-red)' : 'var(--ios-label)'}">${brl(st.gasto)}</div>
+          <div class="sc-sub">realizado</div>
+        </div>
+        <div class="summary-card full">
+          <div class="sc-label">Saldo disponível</div>
+          <div class="sc-value" style="color:${diffColor}">${brl(diff)}</div>
+          <div class="progress-wrap">
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${pct}%;background:${progressColor}"></div>
+            </div>
+            <div class="progress-labels">
+              <span>${pct.toFixed(0)}% utilizado</span>
+              <span>${st.done}/${st.total} itens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">Categorias</div>
+      <div class="card-list">
+        ${Object.entries(CATS).map(([key, c]) => {
+          const s = catStats(key);
+          const pctCat = s.orc > 0 ? Math.min(100, (s.gasto/s.orc)*100) : 0;
+          return `
+          <div class="card-row" onclick="openCat('${key}')">
+            <div class="row-icon" style="background:${c.color}22">${c.emoji}</div>
+            <div class="row-content">
+              <div class="row-label">${c.label}</div>
+              <div class="row-detail">${s.done}/${s.total} concluídos · ${brl(s.gasto)} gastos</div>
+              <div class="progress-track" style="margin-top:5px;height:3px">
+                <div class="progress-fill" style="width:${pctCat}%;background:${c.color}"></div>
+              </div>
+            </div>
+            <div class="row-right">
+              <span class="row-value" style="font-size:14px">${brl(s.orc)}</span>
+              <span class="row-chevron">›</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════
+// RENDER ITEMS
+// ══════════════════════════════════════════
+function renderItems(cat, filter) {
+  const c = CATS[cat];
+  document.getElementById('items-title').textContent = c.label;
+  document.getElementById('items-large-title').textContent = c.label;
+
+  let its = items.filter(i => i.cat === cat);
+  if (filter && filter !== 'all') its = its.filter(i => i.status === filter);
+
+  const scroll = document.getElementById('items-scroll');
+
+  if (its.length === 0) {
+    scroll.innerHTML = `
+      <div class="empty-state animate-in">
+        <div class="empty-icon">${c.emoji}</div>
+        <div class="empty-title">Nenhum item</div>
+        <div class="empty-desc">Toque em + para adicionar itens a esta categoria.</div>
+      </div>`;
+    return;
+  }
+
+  const st = catStats(cat);
+  const pct = st.orc > 0 ? Math.min(100, (st.gasto/st.orc)*100) : 0;
+
+  scroll.innerHTML = `
+    <div class="section" style="margin-top:16px">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="sc-label">Orçado</div>
+          <div class="sc-value color-blue" style="font-size:22px">${brl(st.orc)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="sc-label">Gasto Real</div>
+          <div class="sc-value" style="font-size:22px">${brl(st.gasto)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">${its.length} item${its.length!==1?'s':''}</div>
+      <div class="card-list animate-in">
+        ${its.map(item => `
+        <div class="card-row" onclick="openEditItem('${item.id}')">
+          <div class="row-content">
+            <div class="row-label">${item.desc}</div>
+            ${item.fornec ? `<div class="row-detail">${item.fornec}</div>` : ''}
+          </div>
+          <div class="row-right" style="flex-direction:column;align-items:flex-end;gap:3px">
+            ${statusBadge(item.status)}
+            <span class="row-value" style="font-size:13px">${brl(item.gasto)}</span>
+          </div>
+          <span class="row-chevron">›</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+}
+
+function openCat(cat) {
+  currentCat = cat;
+  currentFilter = 'all';
+  // Reset segmented
+  document.querySelectorAll('#items-seg .seg-item').forEach((b,i) => b.classList.toggle('active', i===0));
+  renderItems(cat, 'all');
+  document.getElementById('items-back-btn').textContent = '‹ Resumo';
+  fromTab = 'home';
+  showView('items');
+}
+
+function goBackFromItems() {
+  if (fromTab === 'home') {
+    showView('home');
+    setActiveTab('tab-home');
+  } else {
+    showView('home');
+    setActiveTab('tab-' + fromTab);
+  }
+}
+
+function switchTab(tab) {
+  setActiveTab('tab-' + tab);
+  if (tab === 'home') { showView('home'); renderHome(); return; }
+  const catMap = { obras:'obras', eletro:'eletro', moveis:'moveis' };
+  const moreMap = { mais: true };
+  if (catMap[tab]) {
+    currentCat = catMap[tab]; currentFilter = 'all'; fromTab = tab;
+    document.querySelectorAll('#items-seg .seg-item').forEach((b,i) => b.classList.toggle('active', i===0));
+    renderItems(currentCat, 'all');
+    document.getElementById('items-back-btn').textContent = '‹ ' + CATS[currentCat].label.split(' ')[0];
+    showView('items');
+  } else if (tab === 'mais') {
+    renderMoreView();
+    showView('home');
+    renderMoreInHome();
+  }
+}
+
+function setActiveTab(id) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function filterItems(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('#items-seg .seg-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderItems(currentCat, f);
+}
+
+// "Mais" tab renders decoracao+outros in home scroll
+function renderMoreInHome() {
+  setActiveTab('tab-mais');
+  const scroll = document.getElementById('home-scroll');
+  const cats2 = ['decoracao','outros'];
+  scroll.innerHTML = `
+    <div class="section" style="margin-top:16px">
+      <div class="large-title-wrap" style="background:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0 16px 10px">
+        <div class="large-title">Mais Categorias</div>
+      </div>
+      <div class="card-list">
+        ${cats2.map(key => {
+          const c = CATS[key]; const s = catStats(key);
+          return `<div class="card-row" onclick="openCatFromMore('${key}')">
+            <div class="row-icon" style="background:${c.color}22">${c.emoji}</div>
+            <div class="row-content">
+              <div class="row-label">${c.label}</div>
+              <div class="row-detail">${s.done}/${s.total} concluídos · ${brl(s.gasto)}</div>
+            </div>
+            <div class="row-right">
+              <span class="row-value" style="font-size:14px">${brl(s.orc)}</span>
+              <span class="row-chevron">›</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  showView('home');
+  document.getElementById('home-subtitle').textContent = 'Decoração e Outros';
+}
+
+function openCatFromMore(cat) {
+  currentCat = cat; currentFilter = 'all'; fromTab = 'mais';
+  document.querySelectorAll('#items-seg .seg-item').forEach((b,i) => b.classList.toggle('active', i===0));
+  renderItems(cat, 'all');
+  document.getElementById('items-back-btn').textContent = '‹ Mais';
+  showView('items');
+}
+
+// ══════════════════════════════════════════
+// SHEET ADD / EDIT
+// ══════════════════════════════════════════
+function openAddItem() {
+  editingId = null;
+  document.getElementById('sheet-title').textContent = 'Novo Item';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-cat').value = currentCat || 'obras';
+  document.getElementById('f-fornec').value = '';
+  document.getElementById('f-orc').value = '';
+  document.getElementById('f-gasto').value = '';
+  document.getElementById('f-status').value = 'A Fazer';
+  document.getElementById('f-obs').value = '';
+  document.getElementById('btn-delete').style.display = 'none';
+  openSheet();
+}
+
+function openEditItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('sheet-title').textContent = 'Editar Item';
+  document.getElementById('f-desc').value = item.desc;
+  document.getElementById('f-cat').value = item.cat;
+  document.getElementById('f-fornec').value = item.fornec || '';
+  document.getElementById('f-orc').value = item.orc || '';
+  document.getElementById('f-gasto').value = item.gasto || '';
+  document.getElementById('f-status').value = item.status;
+  document.getElementById('f-obs').value = item.obs || '';
+  document.getElementById('btn-delete').style.display = 'block';
+  openSheet();
+}
+
+function saveItem() {
+  const desc = document.getElementById('f-desc').value.trim();
+  if (!desc) { document.getElementById('f-desc').focus(); return; }
+  const item = {
+    id: editingId || uid(),
+    cat: document.getElementById('f-cat').value,
+    desc,
+    fornec: document.getElementById('f-fornec').value.trim(),
+    orc: parseFloat(document.getElementById('f-orc').value) || 0,
+    gasto: parseFloat(document.getElementById('f-gasto').value) || 0,
+    status: document.getElementById('f-status').value,
+    obs: document.getElementById('f-obs').value.trim(),
+  };
+  if (editingId) {
+    const idx = items.findIndex(i => i.id === editingId);
+    if (idx >= 0) items[idx] = item;
+  } else {
+    items.push(item);
+  }
+  saveData(items);
+  closeSheet();
+  refreshCurrentView();
+}
+
+function deleteItem() {
+  if (!editingId) return;
+  items = items.filter(i => i.id !== editingId);
+  saveData(items);
+  closeSheet();
+  refreshCurrentView();
+}
+
+function refreshCurrentView() {
+  const active = document.querySelector('.view.active');
+  if (!active) return;
+  if (active.id === 'view-home') renderHome();
+  else if (active.id === 'view-items' && currentCat) renderItems(currentCat, currentFilter);
+}
+
+function openSheet() {
+  const ov = document.getElementById('sheet-overlay');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => ov.classList.add('open'));
+  setTimeout(() => document.getElementById('f-desc').focus(), 400);
+}
+
+function closeSheet() {
+  const ov = document.getElementById('sheet-overlay');
+  ov.classList.remove('open');
+  setTimeout(() => { ov.style.display = 'none'; }, 400);
+}
+
+function closeSheetOutside(e) {
+  if (e.target === document.getElementById('sheet-overlay')) closeSheet();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+renderHome();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
