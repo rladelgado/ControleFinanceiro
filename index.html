@@ -49,7 +49,13 @@
   }
 
   /* ── App Shell ── */
-  #app { height: 100%; display: flex; flex-direction: column; }
+  #app {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   /* ── Navigation Bar (top) ── */
   .nav-bar {
@@ -92,10 +98,11 @@
   /* ── Scroll Content ── */
   .scroll-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+    padding-bottom: 24px;
   }
 
   /* ── Section ── */
@@ -178,7 +185,7 @@
     backdrop-filter: blur(20px);
     border-top: 0.5px solid var(--ios-separator);
     padding-bottom: var(--safe-bottom);
-    display: flex; z-index: 100;
+    display: flex; z-index: 100; flex-shrink: 0;
   }
   .tab-item {
     flex: 1; display: flex; flex-direction: column;
@@ -195,7 +202,7 @@
   .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.1px; }
 
   /* ── Views ── */
-  .view { display: none; height: 100%; flex-direction: column; }
+  .view { display: none; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }
   .view.active { display: flex; }
 
   /* ── Modal Sheet ── */
@@ -292,7 +299,7 @@
   /* ── Segmented Control ── */
   .segmented {
     display: flex; background: var(--ios-gray5); border-radius: 9px;
-    padding: 2px; margin: 12px 16px 0;
+    padding: 2px; margin: 12px 16px 0; flex-shrink: 0;
   }
   .seg-item {
     flex: 1; text-align: center; padding: 6px 4px;
