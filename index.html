@@ -226,17 +226,8 @@
     <button class="tab-item active" id="tab-home" onclick="switchTab('home')">
       <span class="tab-icon">🏠</span><span class="tab-label">Resumo</span>
     </button>
-    <button class="tab-item" id="tab-obras" onclick="switchTab('obras')">
-      <span class="tab-icon">🔨</span><span class="tab-label">Obras</span>
-    </button>
-    <button class="tab-item" id="tab-eletro" onclick="switchTab('eletro')">
-      <span class="tab-icon">🍽️</span><span class="tab-label">Eletro</span>
-    </button>
-    <button class="tab-item" id="tab-moveis" onclick="switchTab('moveis')">
-      <span class="tab-icon">🛋️</span><span class="tab-label">Móveis</span>
-    </button>
-    <button class="tab-item" id="tab-mais" onclick="switchTab('mais')">
-      <span class="tab-icon">•••</span><span class="tab-label">Mais</span>
+    <button class="tab-item" id="tab-cats" onclick="switchTab('cats')">
+      <span class="tab-icon">📋</span><span class="tab-label">Categorias</span>
     </button>
   </nav>
 </div>
@@ -269,6 +260,10 @@
       <div class="form-group">
         <label class="form-label">Fornecedor / Loja</label>
         <input class="form-input" id="f-fornec" type="text" placeholder="Ex: Magazine Luiza">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data da compra</label>
+        <input class="form-input" id="f-data" type="date">
       </div>
       <div class="form-group">
         <label class="form-label">Valor gasto (R$)</label>
@@ -445,25 +440,15 @@ function renderHome() {
       </div>
     </div>
     <div class="section">
-      <div class="section-header">Categorias</div>
       <div class="card-list">
-        ${Object.entries(CATS).map(([key, c]) => {
-          const s = catStats(key);
-          const pctCat = budget > 0 ? Math.min(100,(s.gasto/budget)*100) : 0;
-          return `<div class="card-row" onclick="openCat('${key}')">
-            <div class="row-icon" style="background:${c.color}22">${c.emoji}</div>
-            <div class="row-content">
-              <div class="row-label">${c.label}</div>
-              <div class="row-detail">${s.done}/${s.total} concluídos · ${brl(s.gasto)}</div>
-              ${budget > 0 ? `<div class="progress-track" style="margin-top:5px;height:3px">
-                <div class="progress-fill" style="width:${pctCat}%;background:${c.color}"></div>
-              </div>` : ''}
-            </div>
-            <div class="row-right">
-              <span class="row-chevron">›</span>
-            </div>
-          </div>`;
-        }).join('')}
+        <div class="card-row" onclick="switchTab('cats')">
+          <div class="row-icon" style="background:#007AFF22">📋</div>
+          <div class="row-content">
+            <div class="row-label">Ver todas as categorias</div>
+            <div class="row-detail">${items.length} itens no total</div>
+          </div>
+          <div class="row-right"><span class="row-chevron">›</span></div>
+        </div>
       </div>
     </div>`;
 }
@@ -507,11 +492,12 @@ function renderItems(cat, filter) {
       <div class="card-list animate-in">
         ${its.map(item => {
           const parcInfo = item.parcelas > 1 ? ` · ${item.parcelas}x` : '';
+          const dataInfo = item.data ? ` · ${new Date(item.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})}` : '';
           const fornecInfo = item.fornec ? ` · ${item.fornec}` : '';
           return `<div class="card-row" onclick="openEditItem('${item.id}')">
             <div class="row-content">
               <div class="row-label">${item.desc}</div>
-              ${(item.fornec || item.parcelas>1) ? `<div class="row-detail">${item.fornec}${parcInfo}</div>` : ''}
+              ${(item.fornec || item.parcelas>1 || item.data) ? `<div class="row-detail">${item.fornec}${parcInfo}${dataInfo}</div>` : ''}
             </div>
             <div class="row-right" style="flex-direction:column;align-items:flex-end;gap:3px">
               ${statusBadge(item.status)}
@@ -530,29 +516,21 @@ function showView(name) {
   document.getElementById('view-'+name).classList.add('active');
 }
 function openCat(cat) {
-  currentCat = cat; currentFilter = 'all'; fromTab = 'home';
+  currentCat = cat; currentFilter = 'all'; fromTab = 'cats';
   document.querySelectorAll('#items-seg .seg-item').forEach((b,i) => b.classList.toggle('active',i===0));
   renderItems(cat,'all');
-  document.getElementById('items-back-btn').textContent = '‹ Resumo';
+  document.getElementById('items-back-btn').textContent = '‹ Categorias';
   showView('items');
 }
 function goBackFromItems() {
   showView('home');
-  setActiveTab('tab-' + (fromTab==='home' ? 'home' : fromTab));
-  if (fromTab==='mais') renderMoreInHome();
-  else renderHome();
+  if (fromTab==='cats') { setActiveTab('tab-cats'); renderCatsInHome(); }
+  else { setActiveTab('tab-home'); renderHome(); }
 }
 function switchTab(tab) {
   setActiveTab('tab-'+tab);
   if (tab==='home') { showView('home'); renderHome(); return; }
-  const catMap = {obras:'obras',eletro:'eletro',moveis:'moveis'};
-  if (catMap[tab]) {
-    currentCat=catMap[tab]; currentFilter='all'; fromTab=tab;
-    document.querySelectorAll('#items-seg .seg-item').forEach((b,i)=>b.classList.toggle('active',i===0));
-    renderItems(currentCat,'all');
-    document.getElementById('items-back-btn').textContent='‹ '+CATS[currentCat].label.split(' ')[0];
-    showView('items');
-  } else if (tab==='mais') { renderMoreInHome(); }
+  if (tab==='cats') { renderCatsInHome(); }
 }
 function setActiveTab(id) {
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
@@ -564,18 +542,18 @@ function filterItems(f,btn) {
   btn.classList.add('active');
   renderItems(currentCat,f);
 }
-function renderMoreInHome() {
-  setActiveTab('tab-mais');
-  const cats2=['decoracao','outros','docs'];
-  document.getElementById('home-scroll').innerHTML=`
+function renderCatsInHome() {
+  setActiveTab('tab-cats');
+  document.getElementById('home-subtitle').textContent = 'Todas as categorias';
+  document.getElementById('home-scroll').innerHTML = `
     <div class="section" style="margin-top:16px">
       <div class="large-title-wrap" style="padding:0 16px 10px">
-        <div class="large-title">Mais</div>
+        <div class="large-title">Categorias</div>
       </div>
       <div class="card-list">
-        ${cats2.map(key=>{
-          const c=CATS[key]; const s=catStats(key);
-          return `<div class="card-row" onclick="openCatFromMore('${key}')">
+        ${Object.entries(CATS).map(([key, c]) => {
+          const s = catStats(key);
+          return `<div class="card-row" onclick="openCat('${key}')">
             <div class="row-icon" style="background:${c.color}22">${c.emoji}</div>
             <div class="row-content">
               <div class="row-label">${c.label}</div>
@@ -586,15 +564,7 @@ function renderMoreInHome() {
         }).join('')}
       </div>
     </div>`;
-  document.getElementById('home-subtitle').textContent='Decoração, Outros e Documentos';
   showView('home');
-}
-function openCatFromMore(cat) {
-  currentCat=cat; currentFilter='all'; fromTab='mais';
-  document.querySelectorAll('#items-seg .seg-item').forEach((b,i)=>b.classList.toggle('active',i===0));
-  renderItems(cat,'all');
-  document.getElementById('items-back-btn').textContent='‹ Mais';
-  showView('items');
 }
 
 // ── Budget Sheet ──
@@ -625,6 +595,7 @@ function openAddItem() {
   document.getElementById('f-desc').value='';
   document.getElementById('f-cat').value=currentCat||'obras';
   document.getElementById('f-fornec').value='';
+  document.getElementById('f-data').value='';
   document.getElementById('f-gasto').value='';
   document.getElementById('f-parcelas').value='1';
   document.getElementById('f-status').value='A Fazer';
@@ -639,6 +610,7 @@ function openEditItem(id) {
   document.getElementById('f-desc').value=item.desc;
   document.getElementById('f-cat').value=item.cat;
   document.getElementById('f-fornec').value=item.fornec||'';
+  document.getElementById('f-data').value=item.data||'';
   document.getElementById('f-gasto').value=item.gasto||'';
   document.getElementById('f-parcelas').value=item.parcelas||1;
   document.getElementById('f-status').value=item.status;
@@ -654,6 +626,7 @@ function saveItem() {
     cat: document.getElementById('f-cat').value,
     desc,
     fornec: document.getElementById('f-fornec').value.trim(),
+    data: document.getElementById('f-data').value,
     gasto: parseFloat(document.getElementById('f-gasto').value)||0,
     parcelas: parseInt(document.getElementById('f-parcelas').value)||1,
     status: document.getElementById('f-status').value,
