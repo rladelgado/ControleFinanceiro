@@ -253,6 +253,19 @@
   </nav>
 </div>
 
+
+<!-- CAT GASTO SHEET -->
+<div class="sheet-overlay" id="catgasto-overlay" onclick="closeCatGastoOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="catgasto-title">Categoria</span>
+      <button class="sheet-close" onclick="closeCatGastoSheet()">✕</button>
+    </div>
+    <div class="sheet-body" id="catgasto-body"></div>
+  </div>
+</div>
+
 <!-- ITEM SHEET -->
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheetOutside(event)">
   <div class="sheet">
@@ -562,7 +575,7 @@ function renderHome() {
     ).join('');
 
     const legendItems = catData.map(d =>
-      `<div class="pie-legend-item" onclick="openCat('${d.key}')" style="cursor:pointer">
+      `<div class="pie-legend-item" onclick="openCatGasto('${d.key}')" style="cursor:pointer">
         <div class="pie-legend-left">
           <div class="pie-dot" style="background:${d.color}"></div>
           <span class="pie-legend-label">${d.emoji} ${d.label}</span>
@@ -804,6 +817,59 @@ function refreshView(){const active=document.querySelector('.view.active');if(!a
 function openSheet(){const ov=document.getElementById('sheet-overlay');ov.style.display='flex';requestAnimationFrame(()=>ov.classList.add('open'));setTimeout(()=>document.getElementById('f-desc').focus(),400)}
 function closeSheet(){const ov=document.getElementById('sheet-overlay');ov.classList.remove('open');setTimeout(()=>{ov.style.display='none'},400)}
 function closeSheetOutside(e){if(e.target===document.getElementById('sheet-overlay'))closeSheet()}
+
+
+// ── Cat Gasto Sheet ──
+function openCatGasto(cat) {
+  const c = CATS[cat];
+  const its = items.filter(i => i.cat === cat && (parseFloat(i.gasto)||0) > 0);
+  const totalCat = its.reduce((a,i) => a+(parseFloat(i.gasto)||0), 0);
+
+  document.getElementById('catgasto-title').textContent = `${c.emoji} ${c.label} · ${brl(totalCat)}`;
+
+  if (its.length === 0) {
+    document.getElementById('catgasto-body').innerHTML = `
+      <div style="text-align:center;padding:32px 0;color:var(--ios-label2);font-size:15px">
+        Nenhum gasto registrado nesta categoria.
+      </div>`;
+  } else {
+    const gastoTotal = totalGasto();
+    const pctCat = gastoTotal > 0 ? ((totalCat/gastoTotal)*100).toFixed(1) : '0';
+    document.getElementById('catgasto-body').innerHTML = `
+      <div style="background:${c.color}18;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px;color:${c.color};font-weight:500">
+        ${c.emoji} ${pctCat}% do total gasto
+      </div>
+      <div class="month-detail-list">
+        ${its.map(item => {
+          const parcLabel = item.parcelas > 1 ? ` · ${item.parcelas}x de ${brl(item.gasto/item.parcelas)}` : '';
+          const dataLabel = item.data ? ` · ${new Date(item.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'})}` : '';
+          const fornecLabel = item.fornec ? `<span style="color:var(--ios-label2)"> · ${item.fornec}</span>` : '';
+          return `<div class="mitem" onclick="openEditItem('${item.id}');closeCatGastoSheet()">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="mitem-desc">${item.desc}</span>
+              <span style="font-weight:600;font-size:15px">${brl(item.gasto)}</span>
+            </div>
+            <div class="mitem-sub">${statusBadge(item.status)}${fornecLabel}${parcLabel}${dataLabel}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--ios-separator);
+        display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:600">Total</span>
+        <span style="font-size:18px;font-weight:700;color:${c.color}">${brl(totalCat)}</span>
+      </div>`;
+  }
+
+  const ov = document.getElementById('catgasto-overlay');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => ov.classList.add('open'));
+}
+function closeCatGastoSheet() {
+  const ov = document.getElementById('catgasto-overlay');
+  ov.classList.remove('open');
+  setTimeout(() => { ov.style.display = 'none'; }, 400);
+}
+function closeCatGastoOutside(e) { if (e.target === document.getElementById('catgasto-overlay')) closeCatGastoSheet(); }
 
 // ── Init ──
 renderHome();
