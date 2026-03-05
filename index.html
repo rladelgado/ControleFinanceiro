@@ -209,7 +209,7 @@
   <div class="view active" id="view-home">
     <div class="nav-bar">
       <div class="nav-inner">
-        <span style="min-width:60px"></span>
+        <button class="nav-btn icon" onclick="openBackupSheet()" style="font-size:18px">⋯</button>
         <span class="nav-title">Meu Apartamento</span>
         <button class="nav-btn right icon" onclick="openAddItem()">＋</button>
       </div>
@@ -263,6 +263,56 @@
       <button class="sheet-close" onclick="closeCatGastoSheet()">✕</button>
     </div>
     <div class="sheet-body" id="catgasto-body"></div>
+  </div>
+</div>
+
+<!-- BACKUP SHEET -->
+<div class="sheet-overlay" id="backup-overlay" onclick="closeBackupOutside(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Backup</span>
+      <button class="sheet-close" onclick="closeBackupSheet()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p style="font-size:15px;color:var(--ios-label2);margin-bottom:20px;line-height:1.5">
+        Exporte todos os seus dados para um arquivo CSV, ou importe um backup anterior.
+      </p>
+
+      <div class="form-group">
+        <div class="sc-label" style="margin-bottom:8px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Exportar</div>
+        <div class="card-list">
+          <div class="card-row" onclick="exportCSV()" style="cursor:pointer">
+            <div class="row-icon" style="background:#34C75922">📤</div>
+            <div class="row-content">
+              <div class="row-label">Exportar dados (.csv)</div>
+              <div class="row-detail" id="export-detail">Salva todos os itens e configurações</div>
+            </div>
+            <span class="row-chevron" style="color:var(--ios-green)">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:8px">
+        <div class="sc-label" style="margin-bottom:8px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Importar</div>
+        <div class="card-list">
+          <div class="card-row" style="cursor:pointer" onclick="document.getElementById('csv-file-input').click()">
+            <div class="row-icon" style="background:#007AFF22">📥</div>
+            <div class="row-content">
+              <div class="row-label">Importar backup (.csv)</div>
+              <div class="row-detail">Substitui os dados atuais pelo backup</div>
+            </div>
+            <span class="row-chevron">›</span>
+          </div>
+        </div>
+        <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importCSV(event)">
+        <p style="font-size:12px;color:var(--ios-red);margin-top:8px;line-height:1.5;padding:0 4px">
+          ⚠️ A importação substitui todos os dados atuais. Faça um backup antes de importar.
+        </p>
+      </div>
+
+      <div id="backup-msg" style="display:none;margin-top:8px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.4"></div>
+    </div>
   </div>
 </div>
 
@@ -870,6 +920,145 @@ function closeCatGastoSheet() {
   setTimeout(() => { ov.style.display = 'none'; }, 400);
 }
 function closeCatGastoOutside(e) { if (e.target === document.getElementById('catgasto-overlay')) closeCatGastoSheet(); }
+
+
+// ── Backup: Export CSV ──
+function exportCSV() {
+  const header = ['id','cat','desc','fornec','data','gasto','parcelas','status','obs'];
+  const rows = items.map(item =>
+    header.map(k => {
+      const v = item[k] !== undefined ? String(item[k]) : '';
+      // Escape commas and quotes
+      return v.includes(',') || v.includes('"') || v.includes('\n')
+        ? '"' + v.replace(/"/g, '""') + '"'
+        : v;
+    }).join(',')
+  );
+
+  // Prepend config line with budget and fechamento
+  const configLine = `#CONFIG,budget:${budget},fechamento:${fechamento}`;
+  const csv = [configLine, header.join(','), ...rows].join('\n');
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `meuapto_backup_${stamp}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const detail = document.getElementById('export-detail');
+  if (detail) detail.textContent = `✅ ${items.length} itens exportados`;
+  showBackupMsg('✅ Backup exportado com sucesso!', 'var(--ios-green)');
+}
+
+// ── Backup: Import CSV ──
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result.replace(/^﻿/, ''); // strip BOM
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+
+      let newBudget = budget, newFechamento = fechamento;
+      let dataLines = lines;
+
+      // Parse config line if present
+      if (lines[0].startsWith('#CONFIG')) {
+        const cfg = lines[0];
+        const bMatch = cfg.match(/budget:([\d.]+)/);
+        const fMatch = cfg.match(/fechamento:(\d+)/);
+        if (bMatch) newBudget = parseFloat(bMatch[1]) || 0;
+        if (fMatch) newFechamento = parseInt(fMatch[1]) || 0;
+        dataLines = lines.slice(1); // skip config
+      }
+
+      // Parse header row
+      const header = dataLines[0].split(',');
+      const newItems = [];
+
+      for (let i = 1; i < dataLines.length; i++) {
+        const line = dataLines[i];
+        if (!line.trim()) continue;
+
+        // CSV parse respecting quoted fields
+        const vals = [];
+        let cur = '', inQ = false;
+        for (let c = 0; c < line.length; c++) {
+          const ch = line[c];
+          if (ch === '"') { inQ = !inQ; continue; }
+          if (ch === ',' && !inQ) { vals.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        vals.push(cur);
+
+        const obj = {};
+        header.forEach((h, idx) => { obj[h.trim()] = (vals[idx] || '').trim(); });
+
+        newItems.push({
+          id:       obj.id || uid(),
+          cat:      obj.cat || 'outros',
+          desc:     obj.desc || '',
+          fornec:   obj.fornec || '',
+          data:     obj.data || '',
+          gasto:    parseFloat(obj.gasto) || 0,
+          parcelas: parseInt(obj.parcelas) || 1,
+          status:   obj.status || 'A Fazer',
+          obs:      obj.obs || '',
+        });
+      }
+
+      if (newItems.length === 0) {
+        showBackupMsg('❌ Nenhum item encontrado no arquivo.', 'var(--ios-red)');
+        return;
+      }
+
+      // Apply
+      items = newItems;
+      budget = newBudget;
+      fechamento = newFechamento;
+      saveItems();
+      saveBudgetData(budget);
+      saveFechamentoData(fechamento);
+
+      showBackupMsg(`✅ ${items.length} itens importados com sucesso!`, 'var(--ios-green)');
+      setTimeout(() => { closeBackupSheet(); renderHome(); }, 1500);
+
+    } catch(err) {
+      showBackupMsg('❌ Erro ao ler o arquivo. Verifique se é um CSV válido.', 'var(--ios-red)');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  // Reset input so same file can be re-selected
+  event.target.value = '';
+}
+
+function showBackupMsg(text, color) {
+  const el = document.getElementById('backup-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.background = color === 'var(--ios-green)' ? 'rgba(52,199,89,0.12)' : 'rgba(255,59,48,0.08)';
+  el.style.color = color;
+}
+
+function openBackupSheet() {
+  document.getElementById('backup-msg').style.display = 'none';
+  document.getElementById('export-detail').textContent = `Salva todos os itens e configurações`;
+  const ov = document.getElementById('backup-overlay');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => ov.classList.add('open'));
+}
+function closeBackupSheet() {
+  const ov = document.getElementById('backup-overlay');
+  ov.classList.remove('open');
+  setTimeout(() => { ov.style.display = 'none'; }, 400);
+}
+function closeBackupOutside(e) { if (e.target === document.getElementById('backup-overlay')) closeBackupSheet(); }
 
 // ── Init ──
 renderHome();
