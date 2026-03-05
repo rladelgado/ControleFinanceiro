@@ -191,7 +191,8 @@
   .pie-center-lbl{font-size:11px;color:var(--ios-label2);margin-top:1px;text-align:center}
   .pie-legend{width:100%}
   .pie-legend-item{display:flex;align-items:center;justify-content:space-between;
-    padding:7px 0;border-bottom:0.5px solid var(--ios-separator)}
+    padding:7px 0;border-bottom:0.5px solid var(--ios-separator);-webkit-user-select:none;user-select:none}
+  .pie-legend-item:active{opacity:0.6}
   .pie-legend-item:last-child{border-bottom:none}
   .pie-legend-left{display:flex;align-items:center;gap:8px}
   .pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -561,14 +562,15 @@ function renderHome() {
     ).join('');
 
     const legendItems = catData.map(d =>
-      `<div class="pie-legend-item">
+      `<div class="pie-legend-item" onclick="openCat('${d.key}')" style="cursor:pointer">
         <div class="pie-legend-left">
           <div class="pie-dot" style="background:${d.color}"></div>
           <span class="pie-legend-label">${d.emoji} ${d.label}</span>
         </div>
-        <div class="pie-legend-right">
+        <div class="pie-legend-right" style="flex-direction:row;align-items:center;gap:6px">
           <span class="pie-legend-val">${brl(d.gasto)}</span>
           <span class="pie-legend-pct">${((d.gasto/gasto)*100).toFixed(1)}%</span>
+          <span style="color:#C7C7CC;font-size:14px;margin-left:2px">›</span>
         </div>
       </div>`
     ).join('');
@@ -635,18 +637,8 @@ function renderHome() {
         ${pieHTML}
       </div>
     </div>
+`;
 
-    <div class="section">
-      <div class="card-list">
-          <div class="row-icon" style="background:#007AFF22">📋</div>
-          <div class="row-content">
-            <div class="row-label">Ver todas as categorias</div>
-            <div class="row-detail">${items.length} itens no total</div>
-          </div>
-          <div class="row-right"><span class="row-chevron">›</span></div>
-        </div>
-      </div>
-    </div>`;
 }
 
 // ── Month detail sheet ──
