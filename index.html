@@ -4,11 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MeuApto">
 <meta name="theme-color" content="#F2F2F7">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<!-- Splash screens iOS -->
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)">
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)">
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)">
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3)">
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3)">
+<link rel="apple-touch-startup-image" href="icon-512.png" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2)">
 <title>Meu Apartamento</title>
 <style>
   :root {
@@ -21,10 +28,10 @@
     --ios-label:#000; --ios-label2:rgba(60,60,67,0.6); --ios-label3:rgba(60,60,67,0.3);
     --safe-top:env(safe-area-inset-top,44px); --safe-bottom:env(safe-area-inset-bottom,34px);
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
   html,body{height:100%;width:100%;overflow:hidden;background:var(--ios-bg);
     font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif;
-    -webkit-font-smoothing:antialiased;color:var(--ios-label)}
+    -webkit-font-smoothing:antialiased;color:var(--ios-label);overscroll-behavior:none}
   #app{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;overflow:hidden}
 
   /* Nav */
@@ -43,7 +50,7 @@
 
   /* Scroll */
   .scroll-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;padding-bottom:24px}
+    -webkit-overflow-scrolling:touch;padding-bottom:24px;overscroll-behavior-y:contain}
 
   /* Section */
   .section{margin:20px 0 0}
@@ -174,6 +181,23 @@
   .month-detail-list .mitem:last-child{border-bottom:none}
   .mitem-desc{font-size:15px;color:var(--ios-label)}
   .mitem-sub{font-size:13px;color:var(--ios-label2);margin-top:2px}
+
+  /* Dark Mode */
+  @media(prefers-color-scheme:dark){
+    :root{
+      --ios-bg:#000;--ios-card:#1C1C1E;
+      --ios-label:#fff;--ios-label2:rgba(235,235,245,0.6);--ios-label3:rgba(235,235,245,0.3);
+      --ios-separator:rgba(84,84,88,0.65);
+      --ios-gray5:#2C2C2E;--ios-gray6:#1C1C1E;--ios-gray4:#3A3A3C;
+    }
+    .nav-bar{background:rgba(28,28,30,0.92)}
+    .tab-bar{background:rgba(28,28,30,0.94)}
+    .sheet{background:#1C1C1E}
+    .form-input,.form-select{background:#2C2C2E;color:#fff}
+    .form-input:focus{background:#3A3A3C}
+    .seg-item.active{background:#3A3A3C;box-shadow:0 1px 3px rgba(0,0,0,0.4)}
+    .sheet-close{background:#3A3A3C}
+  }
 
   @keyframes fadeSlideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   .animate-in{animation:fadeSlideIn 0.3s ease forwards}
@@ -1060,8 +1084,87 @@ function closeBackupSheet() {
 }
 function closeBackupOutside(e) { if (e.target === document.getElementById('backup-overlay')) closeBackupSheet(); }
 
+// ── Swipe-to-dismiss em sheets ──
+function initSheetSwipe(overlayId, closeFn) {
+  const overlay = document.getElementById(overlayId);
+  if (!overlay) return;
+  const sheet = overlay.querySelector('.sheet');
+  let startY = 0, dragging = false;
+  sheet.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    dragging = true;
+    sheet.style.transition = 'none';
+  }, {passive:true});
+  sheet.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+  }, {passive:true});
+  sheet.addEventListener('touchend', e => {
+    dragging = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    if (dy > 80) closeFn();
+  }, {passive:true});
+}
+
+// ── Ajuste de teclado via visualViewport ──
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const vh = window.visualViewport.height;
+    document.querySelectorAll('.sheet-overlay.open .sheet').forEach(s => {
+      s.style.maxHeight = (vh * 0.92) + 'px';
+    });
+  });
+}
+
+// ── Swipe-back na view de itens (borda esquerda) ──
+(function() {
+  let startX = 0;
+  document.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (startX < 30 && dx > 60 && document.getElementById('view-items').classList.contains('active')) {
+      goBackFromItems();
+    }
+  }, {passive:true});
+})();
+
+// ── Banner "Adicionar à tela inicial" para iOS Safari ──
+(function() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  const dismissed = localStorage.getItem('pwa_banner_dismissed');
+  if (!isIOS || isStandalone || dismissed) return;
+  const banner = document.createElement('div');
+  banner.id = 'ios-pwa-banner';
+  banner.style.cssText = [
+    'position:fixed','bottom:calc(var(--safe-bottom) + 60px)','left:16px','right:16px',
+    'background:#1C1C1E','color:#fff','border-radius:14px',
+    'padding:14px 16px','z-index:9999','display:flex','align-items:center','gap:12px',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.35)','font-size:14px','line-height:1.4',
+    'animation:fadeSlideIn 0.3s ease'
+  ].join(';');
+  banner.innerHTML = `
+    <span style="font-size:24px;flex-shrink:0">📲</span>
+    <div style="flex:1">
+      <div style="font-weight:600;margin-bottom:2px">Instale o app</div>
+      <div style="color:rgba(235,235,245,0.6)">Toque em <strong>↑ Compartilhar</strong> e depois <strong>Adicionar à Tela de Início</strong></div>
+    </div>
+    <button onclick="localStorage.setItem('pwa_banner_dismissed','1');this.closest('#ios-pwa-banner').remove()"
+      style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;font-family:inherit;flex-shrink:0">✕</button>
+  `;
+  document.body.appendChild(banner);
+})();
+
 // ── Init ──
 renderHome();
+initSheetSwipe('sheet-overlay', closeSheet);
+initSheetSwipe('budget-overlay', closeBudgetSheet);
+initSheetSwipe('catgasto-overlay', closeCatGastoSheet);
+initSheetSwipe('backup-overlay', closeBackupSheet);
+initSheetSwipe('month-overlay', closeMonthSheet);
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body>
