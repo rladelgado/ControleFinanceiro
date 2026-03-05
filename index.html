@@ -180,6 +180,25 @@
   .color-green{color:var(--ios-green)!important}
   .color-red{color:var(--ios-red)!important}
   .color-blue{color:var(--ios-blue)!important}
+
+  /* ── Pizza Chart ── */
+  .pie-wrap{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .pie-svg-wrap{position:relative;width:180px;height:180px;flex-shrink:0}
+  .pie-svg-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .pie-center{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;pointer-events:none}
+  .pie-center-val{font-size:17px;font-weight:700;color:var(--ios-label);letter-spacing:-0.5px}
+  .pie-center-lbl{font-size:11px;color:var(--ios-label2);margin-top:1px;text-align:center}
+  .pie-legend{width:100%}
+  .pie-legend-item{display:flex;align-items:center;justify-content:space-between;
+    padding:7px 0;border-bottom:0.5px solid var(--ios-separator)}
+  .pie-legend-item:last-child{border-bottom:none}
+  .pie-legend-left{display:flex;align-items:center;gap:8px}
+  .pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .pie-legend-label{font-size:14px;color:var(--ios-label)}
+  .pie-legend-right{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+  .pie-legend-val{font-size:13px;font-weight:600;color:var(--ios-label)}
+  .pie-legend-pct{font-size:11px;color:var(--ios-label2)}
 </style>
 </head>
 <body>
@@ -499,6 +518,73 @@ function renderHome() {
         }).join('')}
       </div>`;
 
+
+  // ── Gráfico de pizza por categoria ──
+  const catColors = {
+    obras:'#34C759', eletro:'#FF9500', moveis:'#FF3B30',
+    decoracao:'#AF52DE', outros:'#5AC8FA', docs:'#007AFF'
+  };
+  const catData = Object.entries(CATS)
+    .map(([key, c]) => ({ key, label: c.label, emoji: c.emoji, color: catColors[key], gasto: catStats(key).gasto }))
+    .filter(d => d.gasto > 0)
+    .sort((a, b) => b.gasto - a.gasto);
+
+  let pieHTML;
+  if (catData.length === 0 || gasto === 0) {
+    pieHTML = `<div style="text-align:center;padding:24px 0;color:var(--ios-label2);font-size:14px">
+      Nenhum gasto registrado ainda.
+    </div>`;
+  } else {
+    // Build SVG donut
+    const R = 80, r = 52, cx = 90, cy = 90;
+    let startAngle = 0;
+    const slices = catData.map(d => {
+      const frac = d.gasto / gasto;
+      const angle = frac * 2 * Math.PI;
+      const x1 = cx + R * Math.cos(startAngle);
+      const y1 = cy + R * Math.sin(startAngle);
+      const endAngle = startAngle + angle;
+      const x2 = cx + R * Math.cos(endAngle);
+      const y2 = cy + R * Math.sin(endAngle);
+      const ix1 = cx + r * Math.cos(endAngle);
+      const iy1 = cy + r * Math.sin(endAngle);
+      const ix2 = cx + r * Math.cos(startAngle);
+      const iy2 = cy + r * Math.sin(startAngle);
+      const large = angle > Math.PI ? 1 : 0;
+      const path = `M ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${r} ${r} 0 ${large} 0 ${ix2} ${iy2} Z`;
+      startAngle = endAngle;
+      return { path, color: d.color, pct: frac * 100 };
+    });
+
+    const svgSlices = slices.map(s =>
+      `<path d="${s.path}" fill="${s.color}" stroke="white" stroke-width="1.5"/>`
+    ).join('');
+
+    const legendItems = catData.map(d =>
+      `<div class="pie-legend-item">
+        <div class="pie-legend-left">
+          <div class="pie-dot" style="background:${d.color}"></div>
+          <span class="pie-legend-label">${d.emoji} ${d.label}</span>
+        </div>
+        <div class="pie-legend-right">
+          <span class="pie-legend-val">${brl(d.gasto)}</span>
+          <span class="pie-legend-pct">${((d.gasto/gasto)*100).toFixed(1)}%</span>
+        </div>
+      </div>`
+    ).join('');
+
+    pieHTML = `<div class="pie-wrap">
+      <div class="pie-svg-wrap">
+        <svg viewBox="0 0 180 180">${svgSlices}</svg>
+        <div class="pie-center">
+          <div class="pie-center-val">${brl(gasto)}</div>
+          <div class="pie-center-lbl">total gasto</div>
+        </div>
+      </div>
+      <div class="pie-legend">${legendItems}</div>
+    </div>`;
+  }
+
   document.getElementById('home-scroll').innerHTML = `
     <div class="section" style="margin-top:16px">
       <div class="summary-grid">
@@ -544,8 +630,14 @@ function renderHome() {
     </div>
 
     <div class="section">
+      <div class="section-header">Gastos por categoria</div>
+      <div class="summary-card full" style="margin:0 16px">
+        ${pieHTML}
+      </div>
+    </div>
+
+    <div class="section">
       <div class="card-list">
-        <div class="card-row" onclick="switchTab('cats')">
           <div class="row-icon" style="background:#007AFF22">📋</div>
           <div class="row-content">
             <div class="row-label">Ver todas as categorias</div>
